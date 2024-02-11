@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../utils/supabaseClient';
 import Spinner from './Spinner';
 
 export default function Auth({ setUser }) {
   const [isLoading, setIsLoading] = useState(false);
   const [formEmail, setFormEmail] = useState('');
   const [formPassword, setFormPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleLogin = async ({ email, password }) => {
     setIsLoading(true);
@@ -17,6 +19,7 @@ export default function Auth({ setUser }) {
     const { data: { user } } = await supabase.auth.getUser();
     setIsLoading(false);
     setUser(user);
+    navigate('/account');
   };
 
   const handleSignUp = async ({ email, password }) => {
@@ -29,6 +32,7 @@ export default function Auth({ setUser }) {
     const { data: { user } } = await supabase.auth.getUser();
     setIsLoading(false);
     setUser(user);
+    navigate('/account');
   };
 
   if (isLoading) {
@@ -38,7 +42,7 @@ export default function Auth({ setUser }) {
   return (
     <div>
       <div>
-        <h1>Supabase + React</h1>
+        <h2>Sign in or up, bro</h2>
         <div>
           <input
             type="email"

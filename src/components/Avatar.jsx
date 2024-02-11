@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../utils/supabaseClient';
+import Error from './Error';
 
 export default function Avatar({ url, size, onUpload }) {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   async function downloadImage(path) {
     try {
@@ -14,7 +16,7 @@ export default function Avatar({ url, size, onUpload }) {
       const newUrl = URL.createObjectURL(data);
       setAvatarUrl(newUrl);
     } catch (error) {
-      console.error('Error downloading image: ', error.message);
+      setErrorMessage(error.message);
     }
   }
 
@@ -39,7 +41,7 @@ export default function Avatar({ url, size, onUpload }) {
 
       onUpload(filePath);
     } catch (error) {
-      alert(error.message);
+      setErrorMessage(error.message);
     } finally {
       setUploading(false);
     }
@@ -48,6 +50,10 @@ export default function Avatar({ url, size, onUpload }) {
   useEffect(() => {
     if (url) downloadImage(url);
   }, [url]);
+
+  if (errorMessage) {
+    return <Error message={errorMessage} />;
+  }
 
   return (
     <div>

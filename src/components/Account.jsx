@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
-import Avatar from './Avatar';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../utils/supabaseClient';
+import Error from './Error';
+// import Avatar from './Avatar';
 
-export default function Account({ session }) {
-  const [loading, setLoading] = useState(true);
-  const [username, setUsername] = useState(null);
-  const [website, setWebsite] = useState(null);
+export default function Account({ user }) {
+  const [firstName, setFirstName] = useState(null);
+  const [lastName, setLastName] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const navigate = useNavigate();
 
   async function getProfile() {
     try {
-      setLoading(true);
-      const user = supabase.auth.user();
-
       const { data, error } = await supabase
-        .from('profiles')
-        .select('username, website, avatar_url')
+        .from('users')
+        .select('first_name, last_name, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -23,83 +23,79 @@ export default function Account({ session }) {
         throw error;
       }
 
-      setUsername(data.username);
-      setWebsite(data.website);
+      setFirstName(data.first_name);
+      setLastName(data.last_name);
       setAvatarUrl(data.avatar_url);
     } catch (error) {
-      alert(error.message);
-    } finally {
-      setLoading(false);
+      setErrorMessage(error.message);
     }
   }
 
   // eslint-disable-next-line no-shadow
-  async function updateProfile({ username, website, avatarUrl }) {
+  async function updateProfile({ firstName, lastName, avatarUrl }) {
     try {
-      setLoading(true);
-      const user = supabase.auth.user();
-
       const updates = {
         id: user.id,
-        username,
-        website,
+        first_name: firstName,
+        last_name: lastName,
         avatar_url: avatarUrl,
         updated_at: new Date(),
       };
 
-      const { error } = await supabase.from('profiles').upsert(updates, {
-        returning: 'minimal', // Don't return the value after inserting
-      });
+      const { error } = await supabase.from('users').upsert(updates);
 
       if (error) {
         throw error;
       }
     } catch (error) {
-      alert(error.message);
-    } finally {
-      setLoading(false);
+      setErrorMessage(error.message);
     }
   }
 
   useEffect(() => {
     getProfile();
-  }, [session]);
+  }, []);
+
+  if (errorMessage) {
+    return <Error message={errorMessage} />;
+  }
 
   return (
-    <div className="form-widget">
-      <Avatar
+    <div>
+      <h2>This your account info</h2>
+      {/* <Avatar
         url={avatarUrl}
         size={150}
         onUpload={(url) => {
           setAvatarUrl(url);
-          updateProfile({ username, website, avatarUrl: url });
+          updateProfile({ firstName, lastName, avatarUrl: url });
         }}
-      />
+      /> */}
       <div>
         <label htmlFor="email">
           Email
-          <input id="email" type="text" value={session.user.email} disabled />
+          <input id="email" type="text" value={user.email} disabled />
         </label>
       </div>
       <div>
-        <label htmlFor="username">
-          Name
+        <label htmlFor="first-name">
+          First name
           <input
-            id="username"
+            id="first-name"
             type="text"
-            value={username || ''}
-            onChange={(e) => setUsername(e.target.value)}
+            value={firstName || ''}
+            onChange={(e) => setFirstName(e.target.value)}
           />
         </label>
       </div>
       <div>
-        <label htmlFor="website">
-          Website
+        <label htmlFor="last-name">
+          Last name
           <input
-            id="website"
-            type="website"
-            value={website || ''}
-            onChange={(e) => setWebsite(e.target.value)}
+            id="last-name"
+            type="text"
+            value={lastName || ''}
+            onChange={(e) => setLastName(e.target.value)}
           />
         </label>
       </div>
@@ -107,16 +103,20 @@ export default function Account({ session }) {
       <div>
         <button
           type="button"
-          className="button block primary"
-          onClick={() => updateProfile({ username, website, avatarUrl })}
-          disabled={loading}
+          onClick={() => updateProfile({ firstName, lastName, avatarUrl })}
         >
-          {loading ? 'Loading ...' : 'Update'}
+          Update
         </button>
       </div>
 
       <div>
-        <button type="button" className="button block" onClick={() => supabase.auth.signOut()}>
+        <button
+          type="button"
+          onClick={() => {
+            supabase.auth.signOut();
+            navigate('/auth');
+          }}
+        >
           Sign Out
         </button>
       </div>
